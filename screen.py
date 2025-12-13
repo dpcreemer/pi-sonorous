@@ -156,7 +156,7 @@ class Screen(object):
       x = center_x - (image.width // 2)
     if center_y:
       y = center_y - (image.height // 2)
-    self.draw.rectangle([x-2, y-2, x+image.width+1, y+image.height+1], fill=Color.black, outline=Color.yellow, width=2)
+    self.draw.rectangle([x-2, y-2, x+width+2, y+height+2], fill=Color.black)
     self.canvas.paste(image, (x, y))
 
   def show_button(self, button):

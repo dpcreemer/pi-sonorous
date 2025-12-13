@@ -2,7 +2,9 @@ from requests import Session   # Used to make API calls to internet sources
 from PIL import Image          # Used to manage image data for cover art
 from io import BytesIO         # Used for converting data to/from byte format
 
-HEADER_AGENT=headers = "Pecan/1.0 (davis@creemer.net)"      # Header to identify my app to musicbrainz
+RETRIES = 3
+LOOP_SLEEP = 1.0
+HEADER_AGENT=headers = "Sonorous/1.0 (davis@creemer.net)"      # Header to identify my app to musicbrainz
 
 # Retrieve a unique Release Group ID for a specific artist and album
 # Data comes from musicbrainz.org.  First match on artist and album is accepted.
@@ -15,11 +17,21 @@ def find_album_release_group(artist: str, album: str) -> str | None:
     "fmt": "json"
   }
   
-  response = session.get("https://musicbrainz.org/ws/2/release", headers=headers, params=params)
-  if not response.ok or response.json()['count'] == 0:
-    return None
+  for attempt in range(1, RETRIES+1):
+    try:
+      response = session.get("https://musicbrainz.org/ws/2/release", headers=headers, params=params)
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+      print(f"MusicBrainz connection failed (attempt {attempt}/{RETRIES}): {e}")
+    
+    if attempt == RETRIES:
+      return None
+    time.sleep(LOOP_SLEEP)
   
-  return response.json()["releases"][0]["release-group"]["id"]
+  if not response.ok or response.json()["count"] == 0:
+    return None
+
+  return response.json()["releases"][0]["release_group"]["id"]
+  
 
 # Retrieve a unique Release Group ID for a specific artist and track
 # Data comes from musicbrainz.org catalog of "recordings"
@@ -66,6 +78,10 @@ def get_album_art_by_release_group(release_group: str):
 def get_album_art(artist : str, album : str = "", track : str = ""):
   if not (album or track):
     raise ValueError("Either album or track title must be provided.")
+  
+  if (artist + album + track).lower() == "the current":
+    return Image.open("images/the_current.png").convert("RGBA")
+
   if album:
     release_group = find_album_release_group(artist, album)
   else:
