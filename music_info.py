@@ -77,7 +77,7 @@ def get_album_art_by_release_group(release_group: str):
 # Return None if album art isn't found.
 def get_album_art(artist : str, album : str = "", track : str = ""):
   if not (album or track):
-    raise ValueError("Either album or track title must be provided.")
+    return Image.open("images/music.png")
   
   if (artist + album + track).lower() == "the current":
     return Image.open("images/the_current.png").convert("RGBA")
